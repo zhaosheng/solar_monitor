@@ -1,7 +1,8 @@
 import requests
-from enum import Enum
-from datetime import datetime
+import time
 import json
+import smtplib
+from email.message import EmailMessage
 
 '''
 Loads cookie from file
@@ -11,18 +12,31 @@ def load_cookie(cookie_file_path = './cookie.txt'):
         return cookie_file.readline()
 
 '''
-Define an enum class indicating export status
-'''
-class Status(Enum):
-    FAILED = 1,
-    SUCCESS = 0
-
-'''
 Send out email notification based on export status
 '''
-def mail_notification(type):
-    pass
+def mail_failure_notification():
+    gmail('Solar Edge Generation Export Failed!', 'Is cookie expired?')
 
+def gmail(subject, content):
+    email_address = 'zhaosheng922@gmail.com'
+    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        smtp.starttls()
+        smtp.login('zhaosheng922', load_email_password())
+        msg = EmailMessage()
+        msg.set_content(content)
+        msg['Subject'] = subject
+        msg['From'] = email_address
+        msg['To'] = email_address
+        smtp.send_message(msg)
+
+
+def mail_daily_generation_summary(daily_generation):
+    gmail('Solar Edge Generation Daily Summary', '%d kwh on %s' % (daily_generation['production'], daily_generation['day']))
+
+
+def load_email_password(password_file = './password'):
+    with open(password_file, 'r') as f:
+        return f.read()
 
 '''
 Save exported data file to local for historical tracking purpose
@@ -41,14 +55,17 @@ def export_data_from_solar_edge(cookie):
     ret = requests.get(url, headers=headers)
     if ret.status_code != 200:
         # Failed to get response, cookie expired?
-        mail_notification(Status.FAILED)
+        mail_failure_notification()
     else:
         response = ret.json()
-        data_start_date = response['dataStartDate']
-        date_end_date = response['dataEndDate']
-        save_data_to_local(data_start_date / 1000, date_end_date / 1000, response)
-        mail_notification(Status.SUCCESS)
-    pass
+        data_start_date = response['dataStartDate'] / 1000
+        date_end_date = response['dataEndDate'] / 1000
+        save_data_to_local(data_start_date, date_end_date, response)
+        data = {
+            'production': response['utilizationMeasures']['production']['value'],
+            'day': time.strftime('%Y-%m-%d', time.localtime(data_start_date))
+        }
+        mail_daily_generation_summary(data)
 
 if __name__ == "__main__":
     cookie = load_cookie()
