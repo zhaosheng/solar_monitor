@@ -31,7 +31,7 @@ def gmail(subject, content):
 
 
 def mail_daily_generation_summary(daily_generation):
-    gmail('Solar Edge Generation Daily Summary', '%d kwh on %s' % (daily_generation['production'], daily_generation['day']))
+    gmail('Solar Edge Generation Daily Summary (%s)' % daily_generation['day'], '%d kwh on %s' % (daily_generation['production'], daily_generation['day']))
 
 
 def load_email_password(password_file = './password'):
