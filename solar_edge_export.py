@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+from pytz import timezone
 import json
 import smtplib
 from email.message import EmailMessage
@@ -63,7 +64,7 @@ def export_data_from_solar_edge(cookie):
         save_data_to_local(data_start_date, date_end_date, response)
         data = {
             'production': response['utilizationMeasures']['production']['value'],
-            'day': datetime.fromtimestamp(data_start_date).strftime('%Y-%m-%d')
+            'day': datetime.fromtimestamp(data_start_date, tz=timezone('US/Pacific')).strftime('%Y-%m-%d')
         }
         mail_daily_generation_summary(data)
 
